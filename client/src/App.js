@@ -1,6 +1,6 @@
 import './App.css';
 import React from 'react';
-import {Router} from "@reach/router"
+import {navigate, Router} from "@reach/router"
 import AuthorList from './components/AuthorList';
 import AuthorForm from './components/AuthorForm';
 import UpdateAuthor from './components/UpdateAuthor';
@@ -13,6 +13,7 @@ import axios from 'axios';
 const App= () => {
   const [authors, setAuthors] = useState([]);
   const[loaded, setLoaded] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(()=> {
     axios
@@ -25,22 +26,30 @@ const App= () => {
     .catch(err => console.log(err))
   },[])
 
+  const removeFromDom = authorId => {
+    setAuthors(authors.filter(author => author._id !== authorId))
+  }
+
   const createAuthor = author => {
     axios
     .post("http://localhost:8000/api/new", author)
     .then(res => {
       setAuthors([...authors, res.data])
+      navigate("/");
     })
-    .catch(err => console.log(err))
+    .catch(err => {
+      console.log(err.response.data.err.errors);
+      setErrors(err.response.data.err.errors);
+    })
   }
 
   return (
     <div className="App">
       <h1>Favorite Authors</h1>
       <Router>
-        <AuthorList path="/" default/>
-        <AuthorForm path="/new" initialName="" onSubmitProp={createAuthor} />
-        <UpdateAuthor path="/edit/:id" />
+        <AuthorList path="/" default authors={authors} setAuthors={setAuthors} removeFromDom={removeFromDom}/>
+        <AuthorForm path="/new" initialName={""} onSubmitProp={createAuthor} errors ={errors} setErrors={setErrors}/>
+        <UpdateAuthor path="/edit/:id"/>
       </Router>
     </div>
   );
